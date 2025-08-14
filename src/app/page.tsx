@@ -1,4 +1,5 @@
 "use client";
+import DraggableImage from "@/components/DraggableImage";
 import Dropzone from "@/components/Dropzone";
 import { MosaicCreator } from "@/components/MosaicCreator";
 import { AcceptedImage, Reject } from "@/types";
@@ -8,6 +9,12 @@ import { DropEvent, FileRejection } from "react-dropzone";
 export default function Home() {
   const [acceptedImages, setAcceptedImages] = useState<AcceptedImage[]>([]);
   const [rejected, setRejected] = useState<Reject[]>([]);
+  const [canvasBounds, setCanvasBounds] = useState<{
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  }>();
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[], _: DropEvent) => {
@@ -37,15 +44,16 @@ export default function Home() {
               const aspectRatio = width / height;
 
               setAcceptedImages((prev) => [
-                ...prev,
                 {
                   name: file.name,
+                  tag: `${file.name}-${Date.now()}`,
                   content: reader.result,
                   aspectRatio,
                   width,
                   height,
                   showingInMosaic: false,
                 },
+                ...prev,
               ]);
             };
             img.onerror = (error) => {
@@ -61,38 +69,52 @@ export default function Home() {
     [],
   );
 
+  const updateImage = useCallback(
+    (updatedImage: AcceptedImage) => {
+      if (
+        updatedImage.position &&
+        canvasBounds &&
+        updatedImage.position.x >= canvasBounds.left &&
+        updatedImage.position.x <= canvasBounds.right &&
+        updatedImage.position.y >= canvasBounds.top &&
+        updatedImage.position.y <= canvasBounds.bottom
+      ) {
+        updatedImage.showingInMosaic = true;
+      }
+
+      setAcceptedImages((prevImages) =>
+        prevImages.map((image) =>
+          image.tag === updatedImage.tag
+            ? { ...image, ...updatedImage }
+            : image,
+        ),
+      );
+    },
+    [canvasBounds, setAcceptedImages],
+  );
+
   return (
-    <div className="relative">
+    <div className="relative p-4">
       <Dropzone
         onDrop={onDrop}
         accept={{ "image/jpg": [], "image/jpeg": [], "image/png": [] }}
       />
-      {acceptedImages.length > 0 && (
+      {acceptedImages.filter((img) => !img.showingInMosaic).length > 0 && (
         <div>
           Available (Unassigned) Images:
           <div
-            className="flex flex-row overflow-x-auto"
-            style={{ pointerEvents: "none", userSelect: "none" }}
+            className="flex flex-row overflow-x-scroll"
+            style={{ userSelect: "none" }}
           >
-            {acceptedImages.map((image, index) => (
-              <div
-                key={index}
-                className="mx-4"
-                style={{
-                  height: `100px`,
-                  width: `${100 * image.aspectRatio}px`,
-                  minWidth: `${100 * image.aspectRatio}px`,
-                }}
-              >
-                <img
-                  src={image.content as string}
-                  style={{ objectFit: "cover", height: "100%", width: "100%" }}
-                  onError={(e) => {
-                    console.error("Error rendering image:", e);
-                  }}
+            {acceptedImages
+              .filter((img) => !img.showingInMosaic)
+              .map((image, index) => (
+                <DraggableImage
+                  image={image}
+                  key={index}
+                  updateImage={updateImage}
                 />
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       )}
@@ -102,7 +124,12 @@ export default function Home() {
           {rejected.map((reject) => `${reject.name} - ${reject.reason}`)}
         </div>
       )}
-      <MosaicCreator images={acceptedImages} />
+      {acceptedImages.length > 0 && (
+        <MosaicCreator
+          images={acceptedImages.filter((img) => img.showingInMosaic)}
+          setCanvasBounds={setCanvasBounds}
+        />
+      )}
     </div>
   );
 }

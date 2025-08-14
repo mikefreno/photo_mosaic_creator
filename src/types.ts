@@ -1,6 +1,7 @@
 export interface AcceptedImage {
   name: string;
   content: string | ArrayBuffer | null;
+  tag: string;
   aspectRatio: number;
   width: number;
   height: number;

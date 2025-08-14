@@ -1,7 +1,23 @@
 import { AcceptedImage } from "@/types";
 import React, { useRef, useState, useEffect } from "react";
 
-export const MosaicCreator = ({ images }: { images: AcceptedImage[] }) => {
+export const MosaicCreator = ({
+  images,
+  setCanvasBounds,
+}: {
+  images: AcceptedImage[];
+  setCanvasBounds: ({
+    left,
+    top,
+    right,
+    bottom,
+  }: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  }) => void;
+}) => {
   const [mode, setMode] = useState<"setting" | "viewing">("viewing");
   const [currentLayout, setCurrentLayout] = useState<"desktop" | "mobile">(
     "desktop",
@@ -27,6 +43,18 @@ export const MosaicCreator = ({ images }: { images: AcceptedImage[] }) => {
       }
     }
   }, [gridBlockSize, canvasDimensions]);
+
+  useEffect(() => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      setCanvasBounds({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      });
+    }
+  }, [canvasDimensions, setCanvasBounds]);
 
   const drawGrid = (
     ctx: CanvasRenderingContext2D,
@@ -91,6 +119,10 @@ export const MosaicCreator = ({ images }: { images: AcceptedImage[] }) => {
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   };
+
+  useEffect(() => {
+    console.log(images);
+  }, [images]);
 
   // Handle changes to grid size via slider
   const handleGridSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,26 +202,25 @@ export const MosaicCreator = ({ images }: { images: AcceptedImage[] }) => {
           Viewing
         </label>
       </div>
-      <div className="py-2">
-        <label>
-          Grid Size:
-          <input
-            type="range"
-            min="10"
-            max="50"
-            step="5"
-            value={gridBlockSize}
-            onChange={handleGridSizeChange}
-          />
-          {gridBlockSize}px
-        </label>
+      <div className="py-2 flex flex-row">
+        <label>Grid Size:</label>
+        <input
+          type="range"
+          min="10"
+          max="50"
+          step="5"
+          value={gridBlockSize}
+          onChange={handleGridSizeChange}
+          className="mx-1"
+        />
+        <label>{gridBlockSize}px</label>
       </div>
 
       {/* Canvas and Resizable Borders */}
       <div style={{ display: "flex", justifyContent: "center" }}>
         {/* Left border bar */}
         <div
-          className="bg-red-200"
+          className="bg-gray-300"
           style={{
             width: "20px",
             flexShrink: 0, // Prevent the bar from shrinking
@@ -208,7 +239,7 @@ export const MosaicCreator = ({ images }: { images: AcceptedImage[] }) => {
 
         {/* Right border bar */}
         <div
-          className="bg-red-200"
+          className="bg-gray-300"
           style={{
             width: "20px",
             flexShrink: 0, // Prevent the bar from shrinking
