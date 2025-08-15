@@ -1,12 +1,13 @@
-import { AcceptedImage, DrawnImage } from "@/types";
+import { Point } from "@/classes/helpers";
+import { AcceptedImage } from "@/classes/Image";
 import React, { useRef, useState } from "react";
 
 const DraggableImage = ({
   image,
   updateImage,
 }: {
-  image: AcceptedImage | DrawnImage;
-  updateImage: (updatedImage: AcceptedImage | DrawnImage) => void;
+  image: AcceptedImage;
+  updateImage: (image: AcceptedImage, position: Point) => void;
 }) => {
   const dragRef = useRef<HTMLDivElement>(null);
   const [pointerOffset, setPointerOffset] = useState<{
@@ -24,11 +25,11 @@ const DraggableImage = ({
 
   const handleDrop = (e: React.MouseEvent) => {
     if (pointerOffset) {
-      const newPos = {
+      const newPos = new Point({
         x: e.clientX - pointerOffset.x,
         y: e.clientY - pointerOffset.y,
-      };
-      updateImage({ ...image, position: newPos });
+      });
+      updateImage(image, newPos);
     }
   };
 

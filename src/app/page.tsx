@@ -1,5 +1,6 @@
 "use client";
-import { AcceptedImage } from "@/classes/Image";
+import { Bounds, Point } from "@/classes/helpers";
+import { AcceptedImage, CanvasImage } from "@/classes/Image";
 import DraggableImage from "@/components/DraggableImage";
 import Dropzone from "@/components/Dropzone";
 import { MosaicCreator } from "@/components/MosaicCreator";
@@ -10,12 +11,7 @@ import { DropEvent, FileRejection } from "react-dropzone";
 export default function Home() {
   const [acceptedImages, setAcceptedImages] = useState<AcceptedImage[]>([]);
   const [rejected, setRejected] = useState<Reject[]>([]);
-  const [canvasBounds, setCanvasBounds] = useState<{
-    left: number;
-    top: number;
-    right: number;
-    bottom: number;
-  }>();
+  const [canvasBounds, setCanvasBounds] = useState<Bounds>();
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[], _: DropEvent) => {
@@ -64,25 +60,14 @@ export default function Home() {
   );
 
   const updateImage = useCallback(
-    (updatedImage: AcceptedImage) => {
-      if (
-        updatedImage.position &&
-        canvasBounds &&
-        updatedImage.position.x >= canvasBounds.left &&
-        updatedImage.position.x <= canvasBounds.right &&
-        updatedImage.position.y >= canvasBounds.top &&
-        updatedImage.position.y <= canvasBounds.bottom
-      ) {
-        updatedImage.showingInMosaic = true;
+    (image: AcceptedImage, position: Point) => {
+      if (position.isIn(canvasBounds)) {
+        setAcceptedImages((prevImages) =>
+          prevImages.map((img) =>
+            img.tag === image.tag ? new CanvasImage(image, position) : img,
+          ),
+        );
       }
-
-      setAcceptedImages((prevImages) =>
-        prevImages.map((image) =>
-          image.tag === updatedImage.tag
-            ? { ...image, ...updatedImage }
-            : image,
-        ),
-      );
     },
     [canvasBounds, setAcceptedImages],
   );
@@ -93,7 +78,8 @@ export default function Home() {
         onDrop={onDrop}
         accept={{ "image/jpg": [], "image/jpeg": [], "image/png": [] }}
       />
-      {acceptedImages.filter((img) => !img.showingInMosaic).length > 0 && (
+      {acceptedImages.filter((img) => !(img instanceof CanvasImage)).length >
+        0 && (
         <div>
           Available (Unassigned) Images:
           <div
@@ -118,9 +104,9 @@ export default function Home() {
           {rejected.map((reject) => `${reject.name} - ${reject.reason}`)}
         </div>
       )}
-      {canvasBounds && acceptedImages.length > 0 && (
+      {acceptedImages.length > 0 && (
         <MosaicCreator
-          images={acceptedImages.filter((img) => img.showingInMosaic)}
+          images={acceptedImages.filter((img) => img instanceof CanvasImage)}
           canvasBounds={canvasBounds}
           setCanvasBounds={setCanvasBounds}
         />

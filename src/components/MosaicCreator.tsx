@@ -1,4 +1,5 @@
-import { AcceptedImage } from "@/types";
+import { Bounds } from "@/classes/helpers";
+import { AcceptedImage, CanvasImage } from "@/classes/Image";
 import React, { useRef, useState, useEffect } from "react";
 
 export const MosaicCreator = ({
@@ -6,24 +7,9 @@ export const MosaicCreator = ({
   canvasBounds,
   setCanvasBounds,
 }: {
-  images: AcceptedImage[];
-  canvasBounds: {
-    left: number;
-    top: number;
-    right: number;
-    bottom: number;
-  };
-  setCanvasBounds: ({
-    left,
-    top,
-    right,
-    bottom,
-  }: {
-    left: number;
-    top: number;
-    right: number;
-    bottom: number;
-  }) => void;
+  images: CanvasImage[];
+  canvasBounds: Bounds | undefined;
+  setCanvasBounds: (Bounds: Bounds) => void;
 }) => {
   const [mode, setMode] = useState<"setting" | "viewing">("viewing");
   const [currentLayout, setCurrentLayout] = useState<"desktop" | "mobile">(
@@ -57,12 +43,14 @@ export const MosaicCreator = ({
   useEffect(() => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (rect) {
-      setCanvasBounds({
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-      });
+      setCanvasBounds(
+        new Bounds({
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+        }),
+      );
     }
     clearDrawnImageTags();
   }, [canvasDimensions, setCanvasBounds]);
@@ -78,8 +66,8 @@ export const MosaicCreator = ({
     }
   }, [images]);
 
-  const drawImage = (img: AcceptedImage) => {
-    if (!img.position) return;
+  const drawImage = (img: CanvasImage) => {
+    if (!img.position || !canvasBounds) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");

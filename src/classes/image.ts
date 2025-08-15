@@ -32,15 +32,9 @@ export class CanvasImage extends AcceptedImage {
   position: Point;
   bounds: Bounds;
 
-  constructor({
-    AcceptedImage,
-    position,
-  }: {
-    AcceptedImage: AcceptedImage;
-    position: { x: number; y: number } | Point;
-  }) {
-    super({ ...AcceptedImage });
-    this.position = position instanceof Point ? position : new Point(position);
-    this.bounds = new Bounds(this.position, this.width, this.height);
+  constructor(acceptedImage: AcceptedImage, position: Point) {
+    super({ ...acceptedImage });
+    this.position = position;
+    this.bounds = new Bounds(position, this.width, this.height);
   }
 }
