@@ -1,5 +1,5 @@
 import { Point } from "@/classes/helpers";
-import { AcceptedImage } from "@/classes/Image";
+import { AcceptedImage } from "@/classes/image";
 import React, { useRef, useState } from "react";
 
 const DraggableImage = ({

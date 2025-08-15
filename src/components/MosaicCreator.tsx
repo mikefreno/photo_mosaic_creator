@@ -1,120 +1,53 @@
 import { Bounds } from "@/classes/helpers";
-import { AcceptedImage, CanvasImage } from "@/classes/Image";
-import React, { useRef, useState, useEffect } from "react";
+import { CanvasImage } from "@/classes/image";
+import { CanvasContext } from "@/context/canvas";
+import React, { useRef, useState, useEffect, useContext } from "react";
 
-export const MosaicCreator = ({
-  images,
-  canvasBounds,
-  setCanvasBounds,
-}: {
-  images: CanvasImage[];
-  canvasBounds: Bounds | undefined;
-  setCanvasBounds: (Bounds: Bounds) => void;
-}) => {
+export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
+  const manager = useContext(CanvasContext)!;
   const [mode, setMode] = useState<"setting" | "viewing">("viewing");
   const [currentLayout, setCurrentLayout] = useState<"desktop" | "mobile">(
     "desktop",
   );
-  const [gridBlockSize, setGridBlockSize] = useState<number>(20);
   const [snapToGridEnabled, setSnapToGridEnabled] = useState<boolean>(true);
+
   const [canvasDimensions, setCanvasDimensions] = useState<{
     width: number;
     height: number;
   }>({ width: 600, height: 800 });
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [drawnImageTags, setDrawnImageTags] = useState<string[]>([]);
-  const [hoveredImage, setHoveredImage] = useState<AcceptedImage | null>(null);
+  const [hoveredImage, setHoveredImage] = useState<CanvasImage | null>(null);
 
   // Draw the grid on the canvas
   useEffect(() => {
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
-        drawGrid(
-          ctx,
-          canvasDimensions.width,
-          canvasDimensions.height,
-          gridBlockSize,
-        );
+        manager.setContext(ctx);
+        manager.drawGrid();
       }
     }
-  }, [gridBlockSize, canvasDimensions]);
+  }, [manager.blockSize, canvasDimensions]);
 
   useEffect(() => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (rect) {
-      setCanvasBounds(
-        new Bounds({
-          left: rect.left,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-        }),
-      );
+      const bounds = new Bounds({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      });
+
+      manager.setBounds(bounds);
     }
-    clearDrawnImageTags();
-  }, [canvasDimensions, setCanvasBounds]);
-  const clearDrawnImageTags = () => {
-    setDrawnImageTags([]);
-  };
+  }, [canvasDimensions]);
 
   useEffect(() => {
-    for (const img of images) {
-      if (!drawnImageTags.includes(img.tag)) {
-        drawImage(img);
-      }
-    }
-  }, [images]);
-
-  const drawImage = (img: CanvasImage) => {
-    if (!img.position || !canvasBounds) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const image = new Image();
-    image.src = img.content;
-    const scalingFactor = 0.2;
-
-    image.onload = () => {
-      ctx.drawImage(
-        image,
-        img.position!.x - canvasBounds.left,
-        img.position!.y - canvasBounds.top,
-        img.width * scalingFactor,
-        img.height * scalingFactor,
-      );
-    };
-    setDrawnImageTags((prev) => [...prev, img.tag]);
-  };
-
-  const drawGrid = (
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    blockSize: number,
-  ) => {
-    ctx.clearRect(0, 0, width, height); // Clear previous drawings
-
-    ctx.strokeStyle = "#ddd"; // Light grey for grid lines
-    ctx.lineWidth = 1;
-
-    // Draw vertical lines
-    for (let x = blockSize; x < width; x += blockSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
-      ctx.stroke();
-    }
-
-    // Draw horizontal lines
-    for (let y = blockSize; y < height; y += blockSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-  };
+    manager.evaluateImages(images);
+    manager.draw();
+  }, [images, canvasRef]);
 
   // Handle resizing of the canvas and snapping to grid size
   const handleResize = (
@@ -136,7 +69,8 @@ export const MosaicCreator = ({
 
       // Snap to nearest grid multiple
       const snappedWidth =
-        Math.round(Math.max(200, newWidth) / gridBlockSize) * gridBlockSize;
+        Math.round(Math.max(200, newWidth) / manager.blockSize) *
+        manager.blockSize;
       setCanvasDimensions((prevState) => ({
         ...prevState,
         width: snappedWidth,
@@ -152,14 +86,10 @@ export const MosaicCreator = ({
     document.addEventListener("mouseup", onMouseUp);
   };
 
-  useEffect(() => {
-    console.log(images);
-  }, [images]);
-
   // Handle changes to grid size via slider
   const handleGridSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newSize = Number(event.target.value);
-    setGridBlockSize(newSize);
+    manager.setBlockSize(newSize);
 
     // Snap the current canvas width to nearest multiple of new grid block size
     const snappedWidth = Math.round(canvasDimensions.width / newSize) * newSize;
@@ -172,14 +102,15 @@ export const MosaicCreator = ({
   const handleCanvasMouseDown = (e: React.MouseEvent) => {};
 
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (!manager.bounds) return;
     for (const image of images) {
       if (
-        e.clientX >= image.bounds.left &&
-        e.clientX <= canvasBounds.right &&
-        e.clientY >= canvasBounds.top &&
-        e.clientY <= canvasBounds.bottom
+        image.bounds.contains({
+          x: e.clientX,
+          y: e.clientY,
+        })
       ) {
-        setHoveredImage();
+        setHoveredImage(image);
       }
     }
   };
@@ -256,11 +187,11 @@ export const MosaicCreator = ({
           min="10"
           max="50"
           step="5"
-          value={gridBlockSize}
+          value={manager.blockSize}
           onChange={handleGridSizeChange}
           className="mx-1"
         />
-        <label>{gridBlockSize}px</label>
+        <label>{manager.blockSize}px</label>
       </div>
 
       <div style={{ display: "flex", justifyContent: "center" }}>

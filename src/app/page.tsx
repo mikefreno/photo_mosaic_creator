@@ -1,17 +1,18 @@
 "use client";
-import { Bounds, Point } from "@/classes/helpers";
-import { AcceptedImage, CanvasImage } from "@/classes/Image";
+import { Point } from "@/classes/helpers";
+import { AcceptedImage, CanvasImage } from "@/classes/image";
 import DraggableImage from "@/components/DraggableImage";
 import Dropzone from "@/components/Dropzone";
 import { MosaicCreator } from "@/components/MosaicCreator";
+import { CanvasContext } from "@/context/canvas";
 import { Reject } from "@/types";
-import { useCallback, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import { DropEvent, FileRejection } from "react-dropzone";
 
 export default function Home() {
   const [acceptedImages, setAcceptedImages] = useState<AcceptedImage[]>([]);
   const [rejected, setRejected] = useState<Reject[]>([]);
-  const [canvasBounds, setCanvasBounds] = useState<Bounds>();
+  const manager = useContext(CanvasContext)!;
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[], _: DropEvent) => {
@@ -61,7 +62,7 @@ export default function Home() {
 
   const updateImage = useCallback(
     (image: AcceptedImage, position: Point) => {
-      if (position.isIn(canvasBounds)) {
+      if (position.isIn(manager.bounds)) {
         setAcceptedImages((prevImages) =>
           prevImages.map((img) =>
             img.tag === image.tag ? new CanvasImage(image, position) : img,
@@ -69,7 +70,7 @@ export default function Home() {
         );
       }
     },
-    [canvasBounds, setAcceptedImages],
+    [manager.bounds, setAcceptedImages],
   );
 
   return (
@@ -107,8 +108,6 @@ export default function Home() {
       {acceptedImages.length > 0 && (
         <MosaicCreator
           images={acceptedImages.filter((img) => img instanceof CanvasImage)}
-          canvasBounds={canvasBounds}
-          setCanvasBounds={setCanvasBounds}
         />
       )}
     </div>

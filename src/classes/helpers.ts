@@ -60,7 +60,7 @@ export class Bounds {
     }
   }
 
-  contains(point: Point | undefined) {
+  contains(point: Point | { x: number; y: number } | undefined) {
     return point &&
       point.x >= this.left &&
       point.x <= this.right &&
@@ -74,6 +74,7 @@ export class Bounds {
 export class Point {
   x: number;
   y: number;
+  z: number = 0;
 
   constructor(x: number, y: number);
   constructor({ x, y }: { x: number; y: number });
