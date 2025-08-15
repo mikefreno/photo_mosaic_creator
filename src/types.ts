@@ -34,3 +34,12 @@ export interface Reject {
   name: string;
   reason: string;
 }
+
+export enum Mode {
+  EDITING,
+  PREVIEW,
+}
+export enum Layout {
+  DESKTOP,
+  MOBILE,
+}

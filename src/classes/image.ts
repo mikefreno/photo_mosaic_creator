@@ -1,3 +1,4 @@
+import { Layout, Mode } from "@/types";
 import { Point, Bounds } from "./helpers";
 
 export class AcceptedImage {
@@ -69,6 +70,9 @@ export class CanvasManager {
   bounds: Bounds | undefined;
   ctx: CanvasRenderingContext2D | undefined;
   blockSize: number = 20;
+  snapping: boolean = true;
+  mode: Mode = Mode.EDITING;
+  layout: Layout = Layout.DESKTOP;
 
   get width() {
     return this.bounds ? this.bounds.right - this.bounds.left : 0;
@@ -76,6 +80,18 @@ export class CanvasManager {
 
   get height() {
     return this.bounds ? this.bounds.bottom - this.bounds.top : 0;
+  }
+
+  setSnapping(to: boolean) {
+    this.snapping = to;
+  }
+
+  setMode(mode: Mode) {
+    this.mode = mode;
+  }
+
+  setLayout(layout: Layout) {
+    this.layout = layout;
   }
 
   setBounds(canvasBounds: Bounds) {
@@ -147,16 +163,13 @@ export class CanvasManager {
     this.ctx.clearRect(0, 0, this.width, this.height);
     this.drawGrid();
     for (const image of this.images) {
-      image.base.onload = () => {
-        this.ctx!.drawImage(
-          image.base,
-          image.position!.x - this.bounds!.left,
-          image.position!.y - this.bounds!.top,
-          image.width * image.scalingFactor,
-          image.height * image.scalingFactor,
-        );
-      };
-      this.ctx.drawImage(image.base, image.position.x, image.position.y);
+      this.ctx!.drawImage(
+        image.base,
+        image.position!.x - this.bounds!.left,
+        image.position!.y - this.bounds!.top,
+        image.width * image.scalingFactor,
+        image.height * image.scalingFactor,
+      );
     }
   }
 }

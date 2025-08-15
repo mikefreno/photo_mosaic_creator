@@ -1,16 +1,11 @@
 import { Bounds } from "@/classes/helpers";
 import { CanvasImage } from "@/classes/image";
 import { CanvasContext } from "@/context/canvas";
+import { Layout, Mode } from "@/types";
 import React, { useRef, useState, useEffect, useContext } from "react";
 
 export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
   const manager = useContext(CanvasContext)!;
-  const [mode, setMode] = useState<"setting" | "viewing">("viewing");
-  const [currentLayout, setCurrentLayout] = useState<"desktop" | "mobile">(
-    "desktop",
-  );
-  const [snapToGridEnabled, setSnapToGridEnabled] = useState<boolean>(true);
-
   const [canvasDimensions, setCanvasDimensions] = useState<{
     width: number;
     height: number;
@@ -25,7 +20,7 @@ export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) {
         manager.setContext(ctx);
-        manager.drawGrid();
+        manager.draw();
       }
     }
   }, [manager.blockSize, canvasDimensions]);
@@ -123,11 +118,14 @@ export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
           type="radio"
           name="currentLayout"
           value="desktop"
-          checked={currentLayout === "desktop"}
-          onChange={() => setCurrentLayout("desktop")}
+          checked={manager.layout === Layout.DESKTOP}
+          onChange={() => manager.setLayout(Layout.DESKTOP)}
           className="ml-2"
         />
-        <label onClick={() => setCurrentLayout("desktop")} className="pl-2">
+        <label
+          onClick={() => manager.setLayout(Layout.DESKTOP)}
+          className="pl-2"
+        >
           Desktop
         </label>
         <div
@@ -141,10 +139,14 @@ export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
           type="radio"
           name="currentLayout"
           value="mobile"
-          checked={currentLayout === "mobile"}
-          onChange={() => setCurrentLayout("mobile")}
+          checked={manager.layout === Layout.MOBILE}
+          onChange={() => manager.setLayout(Layout.MOBILE)}
+          className="ml-2"
         />
-        <label onClick={() => setCurrentLayout("mobile")} className="pl-2">
+        <label
+          onClick={() => manager.setLayout(Layout.MOBILE)}
+          className="pl-2"
+        >
           Mobile
         </label>
       </div>
@@ -154,13 +156,13 @@ export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
         <input
           type="radio"
           name="mode"
-          value="setting"
-          checked={mode === "setting"}
-          onChange={() => setMode("setting")}
+          value="editing"
+          checked={manager.mode === Mode.EDITING}
+          onChange={() => manager.setMode(Mode.EDITING)}
           className="ml-2"
         />
-        <label onClick={() => setMode("setting")} className="pl-2">
-          Setting
+        <label onClick={() => manager.setMode(Mode.EDITING)} className="pl-2">
+          Editing
         </label>
         <div
           className="bg-gray-800 mx-2"
@@ -172,13 +174,23 @@ export const MosaicCreator = ({ images }: { images: CanvasImage[] }) => {
         <input
           type="radio"
           name="mode"
-          value="testing"
-          checked={mode === "viewing"}
-          onChange={() => setMode("viewing")}
+          value="preview"
+          checked={manager.mode === Mode.PREVIEW}
+          onChange={() => manager.setMode(Mode.PREVIEW)}
+          className="ml-2"
         />
-        <label onClick={() => setMode("viewing")} className="pl-2">
-          Viewing
+        <label onClick={() => manager.setMode(Mode.PREVIEW)} className="pl-2">
+          Preview
         </label>
+      </div>
+      <div className="py-2 flex flex-row">
+        <label>Grid Snapping:</label>
+        <input
+          type="checkbox"
+          checked={manager.snapping}
+          onChange={() => manager.setSnapping(!manager.snapping)}
+          className="mx-1"
+        />
       </div>
       <div className="py-2 flex flex-row">
         <label>Grid Size:</label>

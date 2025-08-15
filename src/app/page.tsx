@@ -5,7 +5,7 @@ import DraggableImage from "@/components/DraggableImage";
 import Dropzone from "@/components/Dropzone";
 import { MosaicCreator } from "@/components/MosaicCreator";
 import { CanvasContext } from "@/context/canvas";
-import { Reject } from "@/types";
+import { Mode, Reject } from "@/types";
 import { useCallback, useContext, useState } from "react";
 import { DropEvent, FileRejection } from "react-dropzone";
 
@@ -75,37 +75,47 @@ export default function Home() {
 
   return (
     <div className="relative p-4">
-      <Dropzone
-        onDrop={onDrop}
-        accept={{ "image/jpg": [], "image/jpeg": [], "image/png": [] }}
-      />
-      {acceptedImages.filter((img) => !(img instanceof CanvasImage)).length >
-        0 && (
-        <div>
-          Available (Unassigned) Images:
-          <div
-            className="flex flex-row overflow-x-scroll"
-            style={{ userSelect: "none" }}
-          >
-            {acceptedImages
-              .filter((img) => img)
-              .map((image, index) => (
-                <DraggableImage
-                  image={image}
-                  key={index}
-                  updateImage={updateImage}
-                />
-              ))}
-          </div>
-        </div>
-      )}
-      {rejected.length > 0 && (
-        <div>
-          Rejected Uploads:{" "}
-          {rejected.map((reject) => `${reject.name} - ${reject.reason}`)}
-        </div>
-      )}
-      {acceptedImages.length > 0 && (
+      {manager.mode === Mode.EDITING ? (
+        <>
+          <Dropzone
+            onDrop={onDrop}
+            accept={{ "image/jpg": [], "image/jpeg": [], "image/png": [] }}
+          />
+          {acceptedImages.filter((img) => !(img instanceof CanvasImage))
+            .length > 0 && (
+            <div>
+              Available (Unassigned) Images:
+              <div
+                className="flex flex-row overflow-x-scroll"
+                style={{ userSelect: "none" }}
+              >
+                {acceptedImages
+                  .filter((img) => img)
+                  .map((image, index) => (
+                    <DraggableImage
+                      image={image}
+                      key={index}
+                      updateImage={updateImage}
+                    />
+                  ))}
+              </div>
+            </div>
+          )}
+          {rejected.length > 0 && (
+            <div>
+              Rejected Uploads:{" "}
+              {rejected.map((reject) => `${reject.name} - ${reject.reason}`)}
+            </div>
+          )}
+          {acceptedImages.length > 0 && (
+            <MosaicCreator
+              images={acceptedImages.filter(
+                (img) => img instanceof CanvasImage,
+              )}
+            />
+          )}
+        </>
+      ) : (
         <MosaicCreator
           images={acceptedImages.filter((img) => img instanceof CanvasImage)}
         />
