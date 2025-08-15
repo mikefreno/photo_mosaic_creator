@@ -1,13 +1,34 @@
 export interface AcceptedImage {
   name: string;
-  content: string | ArrayBuffer | null;
+  content: string;
   tag: string;
   aspectRatio: number;
   width: number;
   height: number;
-  showingInMosaic: boolean;
-  position?: { x: number; y: number };
 }
+
+export interface DrawnImage {
+  name: string;
+  content: string;
+  tag: string;
+  aspectRatio: number;
+  width: number;
+  height: number;
+  position: Point;
+  bounds: Bounds;
+}
+
+export type Bounds = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
+export type Point = {
+  x: number;
+  y: number;
+};
 
 export interface Reject {
   name: string;

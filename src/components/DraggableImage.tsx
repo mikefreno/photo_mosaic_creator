@@ -1,12 +1,12 @@
-import { AcceptedImage } from "@/types";
+import { AcceptedImage, DrawnImage } from "@/types";
 import React, { useRef, useState } from "react";
 
 const DraggableImage = ({
   image,
   updateImage,
 }: {
-  image: AcceptedImage;
-  updateImage: (updatedImage: AcceptedImage) => void;
+  image: AcceptedImage | DrawnImage;
+  updateImage: (updatedImage: AcceptedImage | DrawnImage) => void;
 }) => {
   const dragRef = useRef<HTMLDivElement>(null);
   const [pointerOffset, setPointerOffset] = useState<{
@@ -48,7 +48,7 @@ const DraggableImage = ({
         }}
       >
         <img
-          src={image.content as string}
+          src={image.content}
           style={{ objectFit: "cover", height: "100%", width: "100%" }}
           onError={(e) => {
             console.error("Error rendering image:", e);

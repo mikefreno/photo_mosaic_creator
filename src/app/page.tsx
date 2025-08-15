@@ -1,8 +1,9 @@
 "use client";
+import { AcceptedImage } from "@/classes/Image";
 import DraggableImage from "@/components/DraggableImage";
 import Dropzone from "@/components/Dropzone";
 import { MosaicCreator } from "@/components/MosaicCreator";
-import { AcceptedImage, Reject } from "@/types";
+import { Reject } from "@/types";
 import { useCallback, useState } from "react";
 import { DropEvent, FileRejection } from "react-dropzone";
 
@@ -36,23 +37,16 @@ export default function Home() {
 
           reader.onloadend = () => {
             const img = new Image();
-            img.src = reader.result as string;
+            img.src = reader.result?.toString() ?? "";
 
             img.onload = () => {
-              const width = img.width;
-              const height = img.height;
-              const aspectRatio = width / height;
-
               setAcceptedImages((prev) => [
-                {
+                new AcceptedImage({
                   name: file.name,
-                  tag: `${file.name}-${Date.now()}`,
-                  content: reader.result,
-                  aspectRatio,
-                  width,
-                  height,
-                  showingInMosaic: false,
-                },
+                  content: img.src,
+                  width: img.width,
+                  height: img.height,
+                }),
                 ...prev,
               ]);
             };
@@ -107,7 +101,7 @@ export default function Home() {
             style={{ userSelect: "none" }}
           >
             {acceptedImages
-              .filter((img) => !img.showingInMosaic)
+              .filter((img) => img)
               .map((image, index) => (
                 <DraggableImage
                   image={image}
@@ -124,9 +118,10 @@ export default function Home() {
           {rejected.map((reject) => `${reject.name} - ${reject.reason}`)}
         </div>
       )}
-      {acceptedImages.length > 0 && (
+      {canvasBounds && acceptedImages.length > 0 && (
         <MosaicCreator
           images={acceptedImages.filter((img) => img.showingInMosaic)}
+          canvasBounds={canvasBounds}
           setCanvasBounds={setCanvasBounds}
         />
       )}

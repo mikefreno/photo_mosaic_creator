@@ -3,9 +3,16 @@ import React, { useRef, useState, useEffect } from "react";
 
 export const MosaicCreator = ({
   images,
+  canvasBounds,
   setCanvasBounds,
 }: {
   images: AcceptedImage[];
+  canvasBounds: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
   setCanvasBounds: ({
     left,
     top,
@@ -23,11 +30,14 @@ export const MosaicCreator = ({
     "desktop",
   );
   const [gridBlockSize, setGridBlockSize] = useState<number>(20);
+  const [snapToGridEnabled, setSnapToGridEnabled] = useState<boolean>(true);
   const [canvasDimensions, setCanvasDimensions] = useState<{
     width: number;
     height: number;
   }>({ width: 600, height: 800 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [drawnImageTags, setDrawnImageTags] = useState<string[]>([]);
+  const [hoveredImage, setHoveredImage] = useState<AcceptedImage | null>(null);
 
   // Draw the grid on the canvas
   useEffect(() => {
@@ -54,7 +64,41 @@ export const MosaicCreator = ({
         bottom: rect.bottom,
       });
     }
+    clearDrawnImageTags();
   }, [canvasDimensions, setCanvasBounds]);
+  const clearDrawnImageTags = () => {
+    setDrawnImageTags([]);
+  };
+
+  useEffect(() => {
+    for (const img of images) {
+      if (!drawnImageTags.includes(img.tag)) {
+        drawImage(img);
+      }
+    }
+  }, [images]);
+
+  const drawImage = (img: AcceptedImage) => {
+    if (!img.position) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const image = new Image();
+    image.src = img.content;
+    const scalingFactor = 0.2;
+
+    image.onload = () => {
+      ctx.drawImage(
+        image,
+        img.position!.x - canvasBounds.left,
+        img.position!.y - canvasBounds.top,
+        img.width * scalingFactor,
+        img.height * scalingFactor,
+      );
+    };
+    setDrawnImageTags((prev) => [...prev, img.tag]);
+  };
 
   const drawGrid = (
     ctx: CanvasRenderingContext2D,
@@ -137,6 +181,21 @@ export const MosaicCreator = ({
     }));
   };
 
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {};
+
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    for (const image of images) {
+      if (
+        e.clientX >= image.bounds.left &&
+        e.clientX <= canvasBounds.right &&
+        e.clientY >= canvasBounds.top &&
+        e.clientY <= canvasBounds.bottom
+      ) {
+        setHoveredImage();
+      }
+    }
+  };
+
   return (
     <div className="flex items-center flex-col">
       <div className="py-2 flex flex-row">
@@ -216,7 +275,6 @@ export const MosaicCreator = ({
         <label>{gridBlockSize}px</label>
       </div>
 
-      {/* Canvas and Resizable Borders */}
       <div style={{ display: "flex", justifyContent: "center" }}>
         {/* Left border bar */}
         <div
@@ -229,9 +287,10 @@ export const MosaicCreator = ({
           onMouseDown={(e) => handleResize("left", e)}
         />
 
-        {/* Canvas */}
         <canvas
           ref={canvasRef}
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
           width={canvasDimensions.width}
           height={canvasDimensions.height}
           style={{ border: "1px solid black" }}
